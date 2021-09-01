@@ -1,3 +1,4 @@
 FROM alpine:3.14
-COPY . /.
+COPY ./kafkasflowes /.
+COPY ./ksflowes.toml /.
 ENTRYPOINT ["./kafkasflowes"]
