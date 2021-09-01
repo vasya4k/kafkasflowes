@@ -93,7 +93,7 @@ func InitKafka(cfg KafkaConfig) (*Kafka, error) {
 }
 
 func (s *Kafka) ConsumeAndIndex(wg *sync.WaitGroup) error {
-	// done := make(chan bool, 1)
+
 	for _, partition := range s.Partitions {
 		var err error
 		var sc ConsumeManager
@@ -107,7 +107,7 @@ func (s *Kafka) ConsumeAndIndex(wg *sync.WaitGroup) error {
 			}).Error(err)
 			return err
 		}
-		// offset, _ := sc.pm.NextOffset()
+
 		offset := sarama.OffsetNewest
 		sc.pc, err = s.Consumer.ConsumePartition(s.Topic, partition, offset)
 		if err != nil {
