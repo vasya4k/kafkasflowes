@@ -8,6 +8,7 @@
 [elastic]
   address = "127.0.0.1"
   port = "9200"
+  index = "sflow"
   geoip = false
   ipdb = "./geolite2/GeoLite2-City.mmdb"
   asndb = "./geolite2/GeoLite2-ASN.mmdb"

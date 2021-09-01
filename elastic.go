@@ -64,24 +64,23 @@ type ESCfg struct {
 	ASNDBPath    string
 	MacTable     map[string]string
 	GeoIPEnabled bool
+	IndexName    string
 }
 
 type ESIndexer struct {
-	Client       *elastic.Client
-	IPDB         *geoip2.Reader
-	ASNDB        *geoip2.Reader
-	Messages     chan *sarama.ConsumerMessage
-	MacTable     map[string]string
-	GeoIPEnabled bool
+	Client   *elastic.Client
+	IPDB     *geoip2.Reader
+	ASNDB    *geoip2.Reader
+	Messages chan *sarama.ConsumerMessage
+	Cfg      ESCfg
 }
 
 func NewIndexer(cfg ESCfg, messages chan *sarama.ConsumerMessage) (*ESIndexer, error) {
 	var err error
 
 	indexer := ESIndexer{
-		MacTable:     cfg.MacTable,
-		Messages:     messages,
-		GeoIPEnabled: cfg.GeoIPEnabled,
+		Cfg:      cfg,
+		Messages: messages,
 	}
 
 	url := fmt.Sprintf("http://%s:%s", cfg.Address, cfg.Port)
@@ -148,8 +147,8 @@ func (e *ESIndexer) NewFlowDoc(msg *flowprotob.FlowMessage) *FlowRecord {
 		IPTTL:          msg.IPTTL,
 		TCPFlags:       msg.TCPFlags,
 		IPv6FlowLabel:  msg.IPv6FlowLabel,
-		SrcDevice:      e.MacTable[srcMAC],
-		DstDevice:      e.MacTable[dstMAC],
+		SrcDevice:      e.Cfg.MacTable[srcMAC],
+		DstDevice:      e.Cfg.MacTable[dstMAC],
 	}
 	return &r
 }
@@ -172,8 +171,7 @@ func (e *ESIndexer) SetLocationData(msg *flowprotob.FlowMessage, f *FlowRecord) 
 		}).Error(err)
 		return
 	}
-	// fmt.Printf("ISO country code: %v\n", record.Country.IsoCode)
-	// fmt.Printf("Coordinates: %v, %v\n", record.Location.Latitude, record.Location.Longitude)
+
 	f.SrcLocation = Location{
 		Lat: srcRecord.Location.Latitude,
 		Lon: srcRecord.Location.Longitude,
@@ -221,8 +219,6 @@ func (e *ESIndexer) Index() {
 	for kafkaMsg := range e.Messages {
 		var sflowMsg flowprotob.FlowMessage
 
-		// sflowMsg.U
-		// printAsJSON(kafkaMsg)
 		err := proto.Unmarshal(kafkaMsg.Value, &sflowMsg)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
@@ -234,14 +230,14 @@ func (e *ESIndexer) Index() {
 
 		doc := e.NewFlowDoc(&sflowMsg)
 
-		if e.GeoIPEnabled {
+		if e.Cfg.GeoIPEnabled {
 			e.SetLocationData(&sflowMsg, doc)
 		}
 
 		doc.TimeFlowStart = doc.TimeFlowStart * 1000
 
 		_, err = e.Client.Index().
-			Index("sflow").
+			Index(e.Cfg.IndexName).
 			BodyJson(doc).
 			Do(ctx)
 
