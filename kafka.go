@@ -60,8 +60,10 @@ func InitKafka(cfg KafkaConfig) (*Kafka, error) {
 	k.Consumer, err = sarama.NewConsumer(cfg.BrokerList, config)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
-			"topic": "kafka",
-			"event": "NewConsumer",
+			"topic":       "kafka",
+			"event":       "NewConsumer",
+			"kafka_topic": k.Topic,
+			"brokers":     cfg.BrokerList,
 		}).Error(err)
 		return nil, err
 	}
