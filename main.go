@@ -48,12 +48,16 @@ func readCfg() (*Cfg, error) {
 
 	cfg.ESCfg.Address = viper.GetString("elastic.address")
 	cfg.ESCfg.Port = viper.GetString("elastic.port")
+	cfg.ESCfg.IndexName = viper.GetString("elastic.index")
 	cfg.ESCfg.IPDBPath = viper.GetString("elastic.ipdb")
 	cfg.ESCfg.ASNDBPath = viper.GetString("elastic.asndb")
 
 	cfg.ESCfg.MacTable = viper.GetStringMapString("mac")
-	cfg.ESCfg.GeoIPEnabled = viper.GetBool("elastic.geoip")
+	cfg.ESCfg.PortTable = viper.GetStringMapString("port")
+	cfg.ESCfg.ProtocolTable = viper.GetStringMapString("protocol")
 
+	cfg.ESCfg.GeoIPEnabled = viper.GetBool("elastic.geoip")
+	printAsJSON(cfg)
 	return &cfg, nil
 }
 

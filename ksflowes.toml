@@ -14,4 +14,19 @@
   asndb = "./geolite2/GeoLite2-ASN.mmdb"
 
 [mac]
-  "baa43ssc4ewe" = "phone"
+  "1111" = "router"
+
+[port]
+  "443" = "https"
+  "80" = "http"
+  "53" = "dns"
+  "993" = "imaps"
+
+
+[protocol]
+  "6" = "tcp"
+  "17" = "udp"
+  "58" = "ipv6-icmp"
+  "0" = "ipv6-hop-by-hop"
+  "1" = "icmp"
+  "2" = "igmp"

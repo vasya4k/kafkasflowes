@@ -58,13 +58,15 @@ type Location struct {
 }
 
 type ESCfg struct {
-	Address      string
-	Port         string
-	IPDBPath     string
-	ASNDBPath    string
-	MacTable     map[string]string
-	GeoIPEnabled bool
-	IndexName    string
+	Address       string
+	Port          string
+	IPDBPath      string
+	ASNDBPath     string
+	MacTable      map[string]string
+	GeoIPEnabled  bool
+	IndexName     string
+	PortTable     map[string]string
+	ProtocolTable map[string]string
 }
 
 type ESIndexer struct {
@@ -100,24 +102,27 @@ func NewIndexer(cfg ESCfg, messages chan *sarama.ConsumerMessage) (*ESIndexer, e
 		}).Error(err)
 		return nil, err
 	}
-	indexer.IPDB, err = geoip2.Open(cfg.IPDBPath)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"topic": "elastic",
-			"event": "new client err",
-			"path":  cfg.IPDBPath,
-		}).Error(err)
-		return nil, err
+	if cfg.GeoIPEnabled {
+		indexer.IPDB, err = geoip2.Open(cfg.IPDBPath)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"topic": "elastic",
+				"event": "new client err",
+				"path":  cfg.IPDBPath,
+			}).Error(err)
+			return nil, err
+		}
+		indexer.ASNDB, err = geoip2.Open(cfg.ASNDBPath)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"topic": "elastic",
+				"event": "new client err",
+				"path":  cfg.ASNDBPath,
+			}).Error(err)
+			return nil, err
+		}
 	}
-	indexer.ASNDB, err = geoip2.Open(cfg.ASNDBPath)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"topic": "elastic",
-			"event": "new client err",
-			"path":  cfg.ASNDBPath,
-		}).Error(err)
-		return nil, err
-	}
+
 	return &indexer, nil
 }
 
@@ -149,6 +154,8 @@ func (e *ESIndexer) NewFlowDoc(msg *flowprotob.FlowMessage) *FlowRecord {
 		IPv6FlowLabel:  msg.IPv6FlowLabel,
 		SrcDevice:      e.Cfg.MacTable[srcMAC],
 		DstDevice:      e.Cfg.MacTable[dstMAC],
+		PortName:       e.Cfg.PortTable[fmt.Sprint(msg.DstPort)],
+		ProtoName:      e.Cfg.ProtocolTable[fmt.Sprint(msg.Proto)],
 	}
 	return &r
 }
